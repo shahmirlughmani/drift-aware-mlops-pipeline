@@ -1,0 +1,60 @@
+%% MLOps system architecture - drift-aware adaptive retraining.
+%% Render: mmdc -i architecture.mmd -o architecture.png -b transparent -w 1600
+flowchart LR
+    subgraph Client["Client layer"]
+        C[("Streaming<br/>data source<br/>(ELEC2)")]
+    end
+
+    subgraph Inference["Inference plane"]
+        API[["FastAPI service<br/>/predict /reload<br/>/metrics"]]
+        Model[("Online model<br/>SGD / Hoeffding")]
+        API <--> Model
+    end
+
+    subgraph Monitoring["Monitoring & adaptation plane"]
+        Drift[["Drift monitor<br/>(Hybrid detector)"]]
+        Prom[(Prometheus<br/>+ alert rules)]
+        Graf[(Grafana<br/>dashboards)]
+        Drift -- "/metrics :9100" --> Prom
+        API   -- "/metrics :8000" --> Prom
+        Prom -->|datasource| Graf
+        Drift -- "POST /reload" --> API
+    end
+
+    subgraph TrackingPlane["Tracking & registry plane"]
+        MLflow[(MLflow Tracking<br/>+ Model Registry)]
+        PG[(PostgreSQL<br/>metadata)]
+        Art[(Artifact store<br/>volume / S3)]
+        Trainer[["Trainer service<br/>warmup + retrain"]]
+        MLflow <-- metadata --> PG
+        MLflow <-- artifacts --> Art
+        Trainer -- log run --> MLflow
+        Trainer -- register model --> MLflow
+    end
+
+    C       -- "POST /predict (x, y)" --> API
+    API     -- "load model:Production" --> MLflow
+    Drift   -- "log drift run" --> MLflow
+    Trainer -- new version --> API
+
+    subgraph CICD["CI / CD"]
+        GH[(GitHub Actions)]
+        GHCR[(GHCR<br/>container registry)]
+        AWS[(AWS<br/>ECS / Fargate)]
+        GH -- build & push --> GHCR
+        GH -- deploy --> AWS
+    end
+
+    GHCR -. pull .-> API
+    GHCR -. pull .-> Drift
+    GHCR -. pull .-> Trainer
+    GHCR -. pull .-> MLflow
+
+    classDef plane fill:#0b1220,stroke:#5677b1,color:#dfe6f3
+    classDef store fill:#1c2330,stroke:#8da7c4,color:#dfe6f3
+    classDef svc   fill:#0e2d3a,stroke:#37c5d9,color:#dfe6f3
+    classDef ci    fill:#2a1a2f,stroke:#b066c2,color:#f1dff7
+    class API,Drift,Trainer svc
+    class Prom,Graf,MLflow,PG,Art,GHCR,AWS,Model store
+    class GH ci
+    class Client,Inference,Monitoring,TrackingPlane,CICD plane

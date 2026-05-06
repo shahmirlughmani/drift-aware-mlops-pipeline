@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "drift-aware-mlops"
+version = "0.1.0"
+description = "Drift-aware adaptive retraining for streaming classification with hybrid concept-drift detection"
+authors = [
+  { name = "Shahmir Asif", email = "i221883@nu.edu.pk" },
+  { name = "AbuBakr",     email = "i221934@nu.edu.pk" },
+  { name = "Zaid",        email = "zaid@nu.edu.pk" }
+]
+requires-python = ">=3.10,<3.13"
+license = { text = "MIT" }
+readme = "README.md"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src*"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+extend-exclude = ["paper", "notebooks", "experiments/results"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "N", "SIM", "RUF"]
+ignore = ["E501", "N803", "N806"]
+
+[tool.ruff.format]
+quote-style = "double"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra -q --strict-markers --cov=src --cov-report=term-missing"
+testpaths = ["tests"]
+markers = [
+  "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+  "integration: marks tests requiring external services"
+]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disallow_untyped_defs = false
+warn_unused_ignores = true

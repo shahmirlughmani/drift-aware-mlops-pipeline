@@ -1,0 +1,21 @@
+cff-version: 1.2.0
+title: "Drift-Aware Adaptive Retraining for Streaming Classification"
+message: "Cite this work using the metadata below."
+type: software
+authors:
+  - given-names: Shahmir
+    family-names: Asif
+    affiliation: "FAST-NUCES Islamabad"
+  - given-names: AbuBakr
+    affiliation: "FAST-NUCES Islamabad"
+  - given-names: Zaid
+    affiliation: "FAST-NUCES Islamabad"
+date-released: "2026-04-28"
+license: MIT
+keywords:
+  - mlops
+  - concept-drift
+  - online-learning
+  - prometheus
+  - mlflow
+  - hybrid-detector

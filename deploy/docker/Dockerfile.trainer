@@ -1,0 +1,23 @@
+# syntax=docker/dockerfile:1.6
+FROM python:3.11-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1
+
+WORKDIR /app
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential libpq-dev curl \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY requirements.txt .
+RUN pip install --upgrade pip && pip install -r requirements.txt
+
+COPY src/ ./src/
+COPY pyproject.toml .
+
+RUN mkdir -p /app/data/raw /app/data/processed /app/experiments/results
+
+# Default command: download + preprocess + train. Override with `command:` in compose.
+CMD ["bash", "-lc", "python -m src.data.download && python -m src.data.preprocess && python -m src.pipelines.train --no-register"]

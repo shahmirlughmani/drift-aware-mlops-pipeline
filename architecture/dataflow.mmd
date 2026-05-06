@@ -1,0 +1,28 @@
+%% Adaptive retraining loop - data flow per stream sample.
+sequenceDiagram
+    autonumber
+    participant Stream as ELEC2 stream
+    participant Mon as Drift monitor
+    participant API as FastAPI service
+    participant Det as Hybrid detector
+    participant ML as MLflow registry
+    participant Prom as Prometheus
+    participant Graf as Grafana
+
+    Stream->>Mon: x_t, y_t
+    Mon->>API: POST /predict {x_t, y_t}
+    API->>API: predict(x_t) -> y_hat_t
+    API->>API: partial_fit(x_t, y_t)
+    API-->>Mon: y_hat_t, p_t, latency
+    Mon->>Det: update(y_hat_t != y_t, x_t)
+    Det-->>Mon: DriftEvent (or None)
+    Mon->>Prom: increment ml_drift_events_total
+    Mon->>Prom: set ml_rolling_accuracy
+    Prom->>Graf: scrape /metrics
+    alt drift event AND not in cooldown
+        Mon->>API: POST /reload
+        API->>ML: fetch latest Production model
+        ML-->>API: model artifact
+        API->>API: swap model
+        API->>Prom: set ml_model_version_info
+    end

@@ -1,0 +1,56 @@
+name: Deploy (optional)
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        type: choice
+        description: "Target environment"
+        options: [staging, production]
+        default: staging
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    name: Deploy to ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+      - name: Login to ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Re-tag GHCR images to ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          REPO: ${{ github.repository }}
+        run: |
+          for img in api trainer drift mlflow; do
+            docker pull ghcr.io/${REPO}/${img}:latest
+            docker tag  ghcr.io/${REPO}/${img}:latest ${ECR_REGISTRY}/${img}:latest
+            docker push ${ECR_REGISTRY}/${img}:latest
+          done
+
+      - name: Update ECS services
+        env:
+          CLUSTER: ${{ vars.ECS_CLUSTER }}
+        run: |
+          for svc in api drift; do
+            aws ecs update-service --cluster "$CLUSTER" --service "$svc" --force-new-deployment
+          done
+
+      - name: Smoke check
+        run: |
+          curl -fsS ${{ vars.API_URL }}/health

@@ -1,0 +1,38 @@
+{
+  "Full": {
+    "accuracy_mean": 0.7916236718495687,
+    "accuracy_std": 0.02809196456742888,
+    "fpr_mean": 0.16666666666666666,
+    "fpr_std": 0.37267799624996495,
+    "delay_mean": NaN,
+    "delay_std": NaN,
+    "n_runs": 6.0
+  },
+  "noCooldown": {
+    "accuracy_mean": 0.7914349238077799,
+    "accuracy_std": 0.027921868903805637,
+    "fpr_mean": 0.16666666666666666,
+    "fpr_std": 0.37267799624996495,
+    "delay_mean": NaN,
+    "delay_std": NaN,
+    "n_runs": 6.0
+  },
+  "noConsensus": {
+    "accuracy_mean": 0.7913936376571655,
+    "accuracy_std": 0.027823172450865807,
+    "fpr_mean": 0.3333333333333333,
+    "fpr_std": 0.4714045207910317,
+    "delay_mean": NaN,
+    "delay_std": NaN,
+    "n_runs": 6.0
+  },
+  "noOverride": {
+    "accuracy_mean": 0.7916236718495687,
+    "accuracy_std": 0.02809196456742888,
+    "fpr_mean": 0.16666666666666666,
+    "fpr_std": 0.37267799624996495,
+    "delay_mean": NaN,
+    "delay_std": NaN,
+    "n_runs": 6.0
+  }
+}

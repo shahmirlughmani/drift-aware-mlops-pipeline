@@ -1,0 +1,42 @@
+{
+  "accuracy": {
+    "applicable": true,
+    "metric": "accuracy",
+    "lower_is_better": false,
+    "n_blocks": 6,
+    "k_methods": 6,
+    "friedman_stat": 24.74489795918365,
+    "friedman_p": 0.0001560570796466642,
+    "average_ranks": {
+      "adwin": 1.5833333333333333,
+      "hybrid": 2.5833333333333335,
+      "page_hinkley": 2.5833333333333335,
+      "ddm": 3.25,
+      "eddm": 5.333333333333333,
+      "kswin": 5.666666666666667
+    },
+    "critical_difference": 3.078351831743734
+  },
+  "mean_detection_delay": {
+    "applicable": false,
+    "reason": "insufficient blocks/groups"
+  },
+  "false_positive_rate": {
+    "applicable": true,
+    "metric": "false_positive_rate",
+    "lower_is_better": true,
+    "n_blocks": 4,
+    "k_methods": 6,
+    "friedman_stat": 11.120689655172407,
+    "friedman_p": 0.049038881901005194,
+    "average_ranks": {
+      "adwin": 2.0,
+      "page_hinkley": 2.5,
+      "hybrid": 2.875,
+      "ddm": 3.875,
+      "kswin": 4.375,
+      "eddm": 5.375
+    },
+    "critical_difference": 3.7701956182670417
+  }
+}

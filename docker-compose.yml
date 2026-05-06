@@ -1,0 +1,137 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mlops_postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mlflow}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mlflow}
+      POSTGRES_DB: ${POSTGRES_DB:-mlflow}
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-mlflow}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    networks: [mlops]
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.mlflow
+    container_name: mlops_mlflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://${POSTGRES_USER:-mlflow}:${POSTGRES_PASSWORD:-mlflow}@postgres:5432/${POSTGRES_DB:-mlflow}
+      MLFLOW_ARTIFACT_ROOT: /mlflow-artifacts
+    volumes:
+      - mlflow_artifacts:/mlflow-artifacts
+    ports:
+      - "5000:5000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks: [mlops]
+
+  trainer:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.trainer
+    container_name: mlops_trainer
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MLFLOW_EXPERIMENT_NAME: ${MLFLOW_EXPERIMENT_NAME:-drift-aware-mlops}
+    volumes:
+      - ./data:/app/data
+      - ./experiments:/app/experiments
+    networks: [mlops]
+    restart: "no"
+
+  api:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.api
+    container_name: mlops_api
+    depends_on:
+      mlflow:
+        condition: service_healthy
+      trainer:
+        condition: service_completed_successfully
+    environment:
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      MODEL_NAME: ${MODEL_NAME:-elec2-online}
+      MODEL_STAGE: ${MODEL_STAGE:-Production}
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./experiments:/app/experiments
+      - ./data:/app/data
+    networks: [mlops]
+
+  drift_monitor:
+    build:
+      context: .
+      dockerfile: deploy/docker/Dockerfile.drift
+    container_name: mlops_drift
+    depends_on:
+      api:
+        condition: service_healthy
+    environment:
+      DRIFT_DETECTOR: ${DRIFT_DETECTOR:-hybrid}
+    ports:
+      - "9100:9100"
+    volumes:
+      - ./data:/app/data
+    networks: [mlops]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    container_name: mlops_prometheus
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./deploy/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prom_data:/prometheus
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+      - "--web.enable-lifecycle"
+    ports:
+      - "9090:9090"
+    depends_on:
+      - api
+      - drift_monitor
+    networks: [mlops]
+
+  grafana:
+    image: grafana/grafana:11.2.2
+    container_name: mlops_grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./deploy/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./deploy/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+    networks: [mlops]
+
+volumes:
+  pg_data:
+  mlflow_artifacts:
+  prom_data:
+  grafana_data:
+
+networks:
+  mlops:
+    driver: bridge

@@ -1,0 +1,41 @@
+groups:
+  - name: model_quality
+    interval: 15s
+    rules:
+      - alert: RollingAccuracyLow
+        expr: ml_rolling_accuracy < 0.6
+        for: 1m
+        labels:
+          severity: warning
+          team: ml-platform
+        annotations:
+          summary: "Rolling accuracy degraded ({{ $value | printf \"%.2f\" }})"
+          description: "Live model accuracy has been below 0.60 for over 1 minute."
+
+      - alert: RollingAccuracyCritical
+        expr: ml_rolling_accuracy < 0.5
+        for: 30s
+        labels:
+          severity: critical
+          team: ml-platform
+        annotations:
+          summary: "Rolling accuracy below 0.50"
+          description: "Model is approaching random performance; investigate drift."
+
+      - alert: HighDriftRate
+        expr: increase(ml_drift_events_total[5m]) > 3
+        for: 0m
+        labels:
+          severity: warning
+          team: ml-platform
+        annotations:
+          summary: "More than 3 drift events fired in 5 minutes"
+
+      - alert: APIErrorRateHigh
+        expr: rate(http_requests_total{status_code=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: ml-platform
+        annotations:
+          summary: "API 5xx error rate above 10% for 2 minutes"

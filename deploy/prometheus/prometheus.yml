@@ -1,0 +1,33 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+  external_labels:
+    project: drift-aware-mlops
+
+rule_files:
+  - /etc/prometheus/alerts.yml
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["localhost:9090"]
+
+  - job_name: api
+    metrics_path: /metrics
+    static_configs:
+      - targets: ["api:8000"]
+        labels:
+          service: inference-api
+
+  - job_name: api_fastapi
+    metrics_path: /metrics-fastapi
+    static_configs:
+      - targets: ["api:8000"]
+        labels:
+          service: inference-api-instrumented
+
+  - job_name: drift_monitor
+    static_configs:
+      - targets: ["drift_monitor:9100"]
+        labels:
+          service: drift-monitor
