@@ -175,7 +175,7 @@ def main() -> None:
                         {
                             k: v
                             for k, v in rec.items()
-                            if isinstance(v, (int, float)) and not np.isnan(v)
+                            if isinstance(v, int | float) and not np.isnan(v)
                         }
                     )
         except Exception as e:
