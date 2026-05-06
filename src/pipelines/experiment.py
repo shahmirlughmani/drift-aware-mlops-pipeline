@@ -8,6 +8,7 @@ Runs prequential evaluation across:
 Logs every run to MLflow with metrics + artifacts. Aggregates across seeds and
 computes Friedman + Nemenyi post-hoc tests over detection-delay and accuracy.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -21,7 +22,6 @@ import pandas as pd
 from src.data.preprocess import load_processed
 from src.data.synthetic import hyperplane_stream, sea_stream
 from src.drift import build_detector
-from src.drift.base import DriftEvent
 from src.models import build_model
 from src.pipelines.metrics import detection_metrics, latency_summary, throughput
 from src.pipelines.prequential import prequential_run
@@ -49,8 +49,9 @@ def _stream_iter(name: str, seed: int, n_samples: int = 40_000):
     raise ValueError(name)
 
 
-def run_one(model_name: str, detector_name: str, stream_name: str, seed: int,
-            n_samples: int = 40_000) -> dict:
+def run_one(
+    model_name: str, detector_name: str, stream_name: str, seed: int, n_samples: int = 40_000
+) -> dict:
     X, y, true_drifts = _stream_iter(stream_name, seed, n_samples=n_samples)
     model = build_model(model_name)
     detector = build_detector(detector_name)
@@ -74,15 +75,17 @@ def run_one(model_name: str, detector_name: str, stream_name: str, seed: int,
         **{f"latency_{k}": v for k, v in lat.items()},
     }
     if dm is not None:
-        record.update({
-            "true_drifts": dm.n_true,
-            "true_positives": dm.true_positives,
-            "false_positives": dm.false_positives,
-            "missed": dm.missed,
-            "mean_detection_delay": dm.mean_delay,
-            "false_positive_rate": dm.false_positive_rate,
-            "miss_rate": dm.miss_rate,
-        })
+        record.update(
+            {
+                "true_drifts": dm.n_true,
+                "true_positives": dm.true_positives,
+                "false_positives": dm.false_positives,
+                "missed": dm.missed,
+                "mean_detection_delay": dm.mean_delay,
+                "false_positive_rate": dm.false_positive_rate,
+                "miss_rate": dm.miss_rate,
+            }
+        )
     return record
 
 
@@ -111,8 +114,17 @@ def friedman_nemenyi(df: pd.DataFrame, metric: str, lower_is_better: bool) -> di
 
     k, n = pivot.shape[1], pivot.shape[0]
     # Critical-difference (Nemenyi, alpha=0.05) for k methods, n datasets.
-    q_alpha_table = {2: 1.960, 3: 2.343, 4: 2.569, 5: 2.728, 6: 2.850, 7: 2.949,
-                     8: 3.031, 9: 3.102, 10: 3.164}
+    q_alpha_table = {
+        2: 1.960,
+        3: 2.343,
+        4: 2.569,
+        5: 2.728,
+        6: 2.850,
+        7: 2.949,
+        8: 3.031,
+        9: 3.102,
+        10: 3.164,
+    }
     q = q_alpha_table.get(k)
     cd = float(q * np.sqrt(k * (k + 1) / (6 * n))) if q else float("nan")
 
@@ -133,12 +145,16 @@ def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--seeds", nargs="+", type=int, default=[42, 1337, 2024])
     p.add_argument("--models", nargs="+", default=["sgd_logistic", "hoeffding_tree"])
-    p.add_argument("--detectors", nargs="+",
-                   default=["adwin", "ddm", "eddm", "kswin", "page_hinkley", "hybrid"])
+    p.add_argument(
+        "--detectors",
+        nargs="+",
+        default=["adwin", "ddm", "eddm", "kswin", "page_hinkley", "hybrid"],
+    )
     p.add_argument("--streams", nargs="+", default=["elec2", "sea", "hyperplane"])
     p.add_argument("--no-mlflow", action="store_true")
-    p.add_argument("--n-samples", type=int, default=40_000,
-                   help="Length of each stream. Default 40000.")
+    p.add_argument(
+        "--n-samples", type=int, default=40_000, help="Length of each stream. Default 40000."
+    )
     args = p.parse_args()
 
     if not args.no_mlflow:
@@ -148,33 +164,32 @@ def main() -> None:
     rows: list[dict] = []
     combos = list(product(args.models, args.detectors, args.streams, args.seeds))
     for i, (m, d, s, seed) in enumerate(combos, 1):
-        log.info("[%d/%d] model=%s detector=%s stream=%s seed=%s",
-                 i, len(combos), m, d, s, seed)
+        log.info("[%d/%d] model=%s detector=%s stream=%s seed=%s", i, len(combos), m, d, s, seed)
         try:
             rec = run_one(m, d, s, seed, n_samples=args.n_samples)
             rows.append(rec)
             if not args.no_mlflow:
-                with mlflow.start_run(
-                    run_name=f"{m}-{d}-{s}-{seed}", nested=False
-                ):
-                    mlflow.log_params({"model": m, "detector": d,
-                                       "stream": s, "seed": seed})
+                with mlflow.start_run(run_name=f"{m}-{d}-{s}-{seed}", nested=False):
+                    mlflow.log_params({"model": m, "detector": d, "stream": s, "seed": seed})
                     mlflow.log_metrics(
-                        {k: v for k, v in rec.items()
-                         if isinstance(v, (int, float)) and not np.isnan(v)}
+                        {
+                            k: v
+                            for k, v in rec.items()
+                            if isinstance(v, (int, float)) and not np.isnan(v)
+                        }
                     )
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.exception("run failed: %s", e)
 
     df = aggregate(rows)
     log.info("Aggregated %d runs -> %s", len(df), EXPERIMENTS_DIR / "results.csv")
 
     stats = {
-        "accuracy":             friedman_nemenyi(df, "accuracy", lower_is_better=False),
+        "accuracy": friedman_nemenyi(df, "accuracy", lower_is_better=False),
         "mean_detection_delay": friedman_nemenyi(
             df[df["stream"] != "elec2"], "mean_detection_delay", lower_is_better=True
         ),
-        "false_positive_rate":  friedman_nemenyi(
+        "false_positive_rate": friedman_nemenyi(
             df[df["stream"] != "elec2"], "false_positive_rate", lower_is_better=True
         ),
     }

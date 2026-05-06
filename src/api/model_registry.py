@@ -3,6 +3,7 @@
 Keeping this isolated lets the API run in CI/dev without MLflow available, and
 keeps the registry coupling at a single seam.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -29,11 +30,10 @@ def load() -> LoadedModel:
     # stage-based registry calls (MLflow >= 2.9).
     try:
         import mlflow
+
         mlflow.set_tracking_uri(settings.mlflow_tracking_uri)
         client = mlflow.tracking.MlflowClient()
-        versions = client.search_model_versions(
-            f"name='{settings.model_name}'", max_results=10
-        )
+        versions = client.search_model_versions(f"name='{settings.model_name}'", max_results=10)
         if versions:
             mv = max(versions, key=lambda v: int(v.version))
             local_path = mlflow.artifacts.download_artifacts(
@@ -44,7 +44,7 @@ def load() -> LoadedModel:
                 model: OnlineModel = joblib.load(joblib_path)
                 log.info("Loaded model %s v%s from MLflow", settings.model_name, mv.version)
                 return LoadedModel(model=model, version=str(mv.version), source="mlflow")
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning("MLflow load failed (%s), falling back to local artifact", e)
 
     # Local fallback.
@@ -54,6 +54,4 @@ def load() -> LoadedModel:
         log.info("Loaded local model from %s", local)
         return LoadedModel(model=model, version="local", source="local")
 
-    raise RuntimeError(
-        "No model available. Train one with `python -m src.pipelines.train` first."
-    )
+    raise RuntimeError("No model available. Train one with `python -m src.pipelines.train` first.")

@@ -3,6 +3,7 @@
 Custom metrics (alongside the FastAPI auto-instrumentor) capture the
 domain signals we need on the dashboards: predictions, errors, drift events.
 """
+
 from __future__ import annotations
 
 from prometheus_client import Counter, Gauge, Histogram

@@ -13,6 +13,7 @@ References:
   *Neurocomputing*. (KSWIN)
 - Page (1954). Continuous inspection schemes. *Biometrika*. (Page-Hinkley)
 """
+
 from __future__ import annotations
 
 from typing import Any
@@ -23,11 +24,12 @@ from river import drift
 from src.drift.base import DriftDetector, DriftEvent
 from src.utils.config import settings
 
-
 # ---------------- Performance-based wrappers (operate on errors) ---------------- #
+
 
 class _RiverPerfDetector(DriftDetector):
     """Adapter for any river detector that accepts a binary/continuous stat per step."""
+
     def __init__(self, impl: Any, name: str) -> None:
         self.impl = impl
         self.name = name
@@ -52,8 +54,9 @@ class ADWINDetector(_RiverPerfDetector):
 
 
 class DDMDetector(_RiverPerfDetector):
-    def __init__(self, warm_start: int = 30, warning_threshold: float = 2.0,
-                 drift_threshold: float = 3.0) -> None:
+    def __init__(
+        self, warm_start: int = 30, warning_threshold: float = 2.0, drift_threshold: float = 3.0
+    ) -> None:
         super().__init__(
             drift.binary.DDM(
                 warm_start=warm_start,
@@ -65,9 +68,7 @@ class DDMDetector(_RiverPerfDetector):
 
 
 class EDDMDetector(_RiverPerfDetector):
-    def __init__(self, warm_start: int = 30,
-                 alpha: float = 0.95,
-                 beta: float = 0.9) -> None:
+    def __init__(self, warm_start: int = 30, alpha: float = 0.95, beta: float = 0.9) -> None:
         super().__init__(
             drift.binary.EDDM(warm_start=warm_start, alpha=alpha, beta=beta),
             name="EDDM",
@@ -75,12 +76,19 @@ class EDDMDetector(_RiverPerfDetector):
 
 
 class PageHinkleyDetector(_RiverPerfDetector):
-    def __init__(self, min_instances: int = 30, delta: float = 0.005,
-                 threshold: float = 50.0, alpha: float = 1 - 1e-4) -> None:
+    def __init__(
+        self,
+        min_instances: int = 30,
+        delta: float = 0.005,
+        threshold: float = 50.0,
+        alpha: float = 1 - 1e-4,
+    ) -> None:
         super().__init__(
             drift.PageHinkley(
-                min_instances=min_instances, delta=delta,
-                threshold=threshold, alpha=alpha,
+                min_instances=min_instances,
+                delta=delta,
+                threshold=threshold,
+                alpha=alpha,
             ),
             name="PageHinkley",
         )
@@ -88,18 +96,26 @@ class PageHinkleyDetector(_RiverPerfDetector):
 
 # ---------------- Distribution-based detector (operates on a univariate stat) ---------------- #
 
+
 class KSWINDetector(DriftDetector):
     """Kolmogorov-Smirnov windowing test on a univariate streaming statistic.
 
     For multivariate `x`, we collapse to a stable scalar (L2 norm of the
     standardized feature vector). This is a common practical reduction.
     """
+
     name = "KSWIN"
 
-    def __init__(self, alpha: float = 0.005, window_size: int = 100,
-                 stat_size: int = 30, seed: int = settings.random_seed) -> None:
-        self.impl = drift.KSWIN(alpha=alpha, window_size=window_size,
-                                stat_size=stat_size, seed=seed)
+    def __init__(
+        self,
+        alpha: float = 0.005,
+        window_size: int = 100,
+        stat_size: int = 30,
+        seed: int = settings.random_seed,
+    ) -> None:
+        self.impl = drift.KSWIN(
+            alpha=alpha, window_size=window_size, stat_size=stat_size, seed=seed
+        )
         self._t = 0
         # Running mean / std for standardization (Welford's algorithm).
         self._mean = 0.0
@@ -128,14 +144,16 @@ class KSWINDetector(DriftDetector):
         return None
 
     def reset(self) -> None:
-        self.impl = drift.KSWIN(alpha=0.005, window_size=100, stat_size=30,
-                                seed=settings.random_seed)
+        self.impl = drift.KSWIN(
+            alpha=0.005, window_size=100, stat_size=30, seed=settings.random_seed
+        )
         self._t = 0
         self._mean = self._m2 = 0.0
         self._n = 0
 
 
 # ---------------- Novel contribution: HybridDriftDetector ---------------- #
+
 
 class HybridDriftDetector(DriftDetector):
     """Hybrid performance + distribution detector with consensus voting.
@@ -158,6 +176,7 @@ class HybridDriftDetector(DriftDetector):
     This combines low false-positive rate (consensus) with fast reaction to
     high-impact accuracy drops (confidence override).
     """
+
     name = "Hybrid"
 
     def __init__(
@@ -175,9 +194,9 @@ class HybridDriftDetector(DriftDetector):
         self.cooldown = cooldown
 
         self._t = 0
-        self._last_drift_t = -10**9
-        self._last_ddm_signal = -10**9
-        self._last_kswin_signal = -10**9
+        self._last_drift_t = -(10**9)
+        self._last_ddm_signal = -(10**9)
+        self._last_kswin_signal = -(10**9)
         self._err_window: list[int] = []
         self._err_window_size = 200
 
@@ -209,8 +228,7 @@ class HybridDriftDetector(DriftDetector):
             and max(self._last_ddm_signal, self._last_kswin_signal) == self._t
         )
         confidence_override = (
-            ddm_event is not None
-            and self._posterior_error() >= self.confidence_threshold
+            ddm_event is not None and self._posterior_error() >= self.confidence_threshold
         )
 
         if consensus or confidence_override:
@@ -223,6 +241,6 @@ class HybridDriftDetector(DriftDetector):
         self.ddm.reset()
         self.kswin.reset()
         self._t = 0
-        self._last_drift_t = -10**9
-        self._last_ddm_signal = self._last_kswin_signal = -10**9
+        self._last_drift_t = -(10**9)
+        self._last_ddm_signal = self._last_kswin_signal = -(10**9)
         self._err_window.clear()

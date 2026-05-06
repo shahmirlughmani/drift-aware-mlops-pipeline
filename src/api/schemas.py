@@ -7,7 +7,9 @@ from pydantic import BaseModel, Field
 
 class PredictRequest(BaseModel):
     features: list[float] = Field(..., min_length=1, max_length=64)
-    label: int | None = Field(None, ge=0, le=1, description="Optional ground-truth for online update.")
+    label: int | None = Field(
+        None, ge=0, le=1, description="Optional ground-truth for online update."
+    )
     request_id: str | None = None
 
 

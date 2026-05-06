@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import numpy as np
-
 from src.data.synthetic import sea_stream
 from src.drift import build_detector
 from src.models import build_model
@@ -37,5 +35,7 @@ def test_adaptive_retrain_triggers() -> None:
         ddm_drift_threshold=2.5,
     )
     res = prequential_run(model, detector, X, y, warmup=200, adaptive=True, accuracy_window=200)
-    assert len(res.drift_events) >= 1, f"hybrid did not fire on sharp drift; events={res.drift_events}"
+    assert len(res.drift_events) >= 1, (
+        f"hybrid did not fire on sharp drift; events={res.drift_events}"
+    )
     assert res.retrains >= 1

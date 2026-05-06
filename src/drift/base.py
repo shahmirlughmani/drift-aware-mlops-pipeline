@@ -8,6 +8,7 @@ We standardize on a `update(error, x=None) -> DriftEvent | None` API so that
 performance-based and distribution-based detectors are interchangeable
 inside the prequential loop and the streaming monitor.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
@@ -18,9 +19,9 @@ import numpy as np
 
 @dataclass(frozen=True)
 class DriftEvent:
-    index: int           # sample index in the stream when drift fired
-    severity: float      # detector-specific score (>= 0)
-    detector: str        # name of the detector that fired
+    index: int  # sample index in the stream when drift fired
+    severity: float  # detector-specific score (>= 0)
+    detector: str  # name of the detector that fired
 
 
 class DriftDetector(ABC):

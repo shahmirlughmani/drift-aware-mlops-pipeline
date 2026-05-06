@@ -23,6 +23,6 @@ def test_sea_concept_changes_at_boundary() -> None:
 
 
 def test_hyperplane_shape() -> None:
-    X, y, drifts = hyperplane_stream(n_samples=500, n_features=5, drift_points=(250,), noise=0.0)
+    X, _y, drifts = hyperplane_stream(n_samples=500, n_features=5, drift_points=(250,), noise=0.0)
     assert X.shape == (500, 5)
     assert len(drifts) == 1

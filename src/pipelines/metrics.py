@@ -3,6 +3,7 @@
 Definitions follow Bifet et al. (2018) "Machine Learning for Data Streams"
 and Goncalves et al. (2014) systematic review on drift detector evaluation.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -19,9 +20,9 @@ class DetectionMetrics:
     true_positives: int
     false_positives: int
     missed: int
-    mean_delay: float           # mean time-to-detect (in samples), TPs only
+    mean_delay: float  # mean time-to-detect (in samples), TPs only
     false_positive_rate: float  # FP / detections
-    miss_rate: float            # missed / true positives possible
+    miss_rate: float  # missed / true positives possible
 
 
 def detection_metrics(

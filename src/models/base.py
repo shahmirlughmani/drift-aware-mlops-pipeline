@@ -4,6 +4,7 @@ We deliberately wrap heterogeneous backends (scikit-learn, river) behind a
 single `partial_fit` / `predict_proba` contract so the prequential loop is
 backend-agnostic.
 """
+
 from __future__ import annotations
 
 from abc import ABC, abstractmethod

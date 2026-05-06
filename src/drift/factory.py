@@ -23,9 +23,7 @@ _REGISTRY: dict[str, type[DriftDetector]] = {
 def build_detector(name: str, **kwargs) -> DriftDetector:
     key = name.lower().replace("-", "_")
     if key not in _REGISTRY:
-        raise ValueError(
-            f"Unknown drift detector '{name}'. Available: {sorted(_REGISTRY)}"
-        )
+        raise ValueError(f"Unknown drift detector '{name}'. Available: {sorted(_REGISTRY)}")
     return _REGISTRY[key](**kwargs)
 
 

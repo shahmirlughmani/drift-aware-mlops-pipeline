@@ -1,4 +1,5 @@
 """Preprocess ELEC2 into a deterministic train/stream split for prequential evaluation."""
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -12,7 +13,16 @@ from src.utils.logging import get_logger
 
 log = get_logger(__name__)
 
-FEATURE_COLS = ["date", "day", "period", "nswprice", "nswdemand", "vicprice", "vicdemand", "transfer"]
+FEATURE_COLS = [
+    "date",
+    "day",
+    "period",
+    "nswprice",
+    "nswdemand",
+    "vicprice",
+    "vicdemand",
+    "transfer",
+]
 TARGET_COL = "class"
 
 
@@ -35,7 +45,7 @@ def preprocess(warmup: int = 5000) -> dict[str, Path]:
     df = _load_raw()
     log.info("Loaded ELEC2: %s", df.shape)
 
-    missing = [c for c in FEATURE_COLS + [TARGET_COL] if c not in df.columns]
+    missing = [c for c in [*FEATURE_COLS, TARGET_COL] if c not in df.columns]
     if missing:
         raise ValueError(f"ELEC2 schema mismatch, missing columns: {missing}")
 
@@ -54,7 +64,7 @@ def preprocess(warmup: int = 5000) -> dict[str, Path]:
         "y_warmup": PROCESSED_DIR / "y_warmup.npy",
         "X_stream": PROCESSED_DIR / "X_stream.npy",
         "y_stream": PROCESSED_DIR / "y_stream.npy",
-        "features":  PROCESSED_DIR / "features.txt",
+        "features": PROCESSED_DIR / "features.txt",
     }
     np.save(paths["X_warmup"], X_warmup)
     np.save(paths["y_warmup"], y_warmup)

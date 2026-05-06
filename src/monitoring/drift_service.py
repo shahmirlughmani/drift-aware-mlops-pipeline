@@ -10,13 +10,13 @@ This module is what makes the monitoring layer *load-bearing* for the research
 contribution: the metrics it exports ARE the experimental signals studied in
 the paper, not bolted-on dashboards.
 """
+
 from __future__ import annotations
 
 import argparse
 import time
 from dataclasses import dataclass
 
-import numpy as np
 import requests
 from prometheus_client import start_http_server
 from tenacity import retry, stop_after_attempt, wait_exponential
@@ -61,7 +61,7 @@ def _post_predict(api: str, features: list[float], label: int) -> dict:
 def _post_reload(api: str) -> None:
     try:
         requests.post(f"{api}/reload", timeout=10).raise_for_status()
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.warning("reload failed: %s", e)
 
 
@@ -74,7 +74,7 @@ def run(cfg: MonitorConfig) -> None:
     log.info("detector=%s stream_len=%d", detector.name, len(X))
 
     rolling_correct: list[int] = []
-    last_retrain = -10**9
+    last_retrain = -(10**9)
 
     for t in range(len(X)):
         feats = X[t].tolist()
@@ -82,7 +82,7 @@ def run(cfg: MonitorConfig) -> None:
 
         try:
             resp = _post_predict(cfg.api_url, feats, true_y)
-        except Exception as e:  # noqa: BLE001
+        except Exception as e:
             log.warning("prediction failed at t=%d: %s", t, e)
             continue
 
@@ -109,8 +109,12 @@ def run(cfg: MonitorConfig) -> None:
                 log.info("[t=%d] drift suppressed (cooldown)", t)
 
         if t % cfg.log_every == 0:
-            log.info("t=%d acc=%.4f drifts=%d", t, acc,
-                     int(DRIFT_EVENTS_TOTAL.labels(detector=detector.name, kind="drift")._value.get()))
+            log.info(
+                "t=%d acc=%.4f drifts=%d",
+                t,
+                acc,
+                int(DRIFT_EVENTS_TOTAL.labels(detector=detector.name, kind="drift")._value.get()),
+            )
 
         if cfg.pace_seconds > 0:
             time.sleep(cfg.pace_seconds)

@@ -3,15 +3,14 @@
 This script produces the *initial* registered model used by the API service.
 Online updates and adaptive retraining happen in the streaming runtime.
 """
+
 from __future__ import annotations
 
 import argparse
 import json
-from pathlib import Path
 
 import joblib
 import mlflow
-import numpy as np
 from sklearn.metrics import accuracy_score, f1_score, log_loss, roc_auc_score
 from sklearn.model_selection import train_test_split
 
@@ -75,7 +74,7 @@ def train(model_name: str, register: bool = True) -> dict:
                     model_uri=f"runs:/{run.info.run_id}/model",
                     name=settings.model_name,
                 )
-            except Exception as e:  # noqa: BLE001
+            except Exception as e:
                 log.warning("Model registry not available, skipping: %s", e)
 
         return meta

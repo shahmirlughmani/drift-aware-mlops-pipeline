@@ -68,12 +68,14 @@ jobs:
     needs: build
     runs-on: ubuntu-latest
     if: github.event_name != 'pull_request'
+    continue-on-error: true   # security scan is informational, never fails the pipeline
     steps:
       - uses: actions/checkout@v4
       - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@0.24.0
+        uses: aquasecurity/trivy-action@0.28.0
         with:
           image-ref: ghcr.io/${{ github.repository }}/api:latest
           format: table
           exit-code: "0"
           severity: HIGH,CRITICAL
+          ignore-unfixed: true

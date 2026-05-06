@@ -8,6 +8,7 @@ We implement two classics from the drift literature:
 These are injected with **known** drift points so we can compute detection delay
 and false-positive rate analytically (impossible on real data).
 """
+
 from __future__ import annotations
 
 import numpy as np

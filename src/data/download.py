@@ -4,10 +4,9 @@ ELEC2 (Harries, 1999): NSW electricity market price-trend prediction.
 45,312 instances, 8 features, binary label UP/DOWN. Real concept drift
 caused by changing market dynamics over time.
 """
+
 from __future__ import annotations
 
-import io
-import zipfile
 from pathlib import Path
 
 import requests

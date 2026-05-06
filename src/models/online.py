@@ -1,4 +1,5 @@
 """Concrete online learners."""
+
 from __future__ import annotations
 
 import numpy as np
@@ -14,8 +15,9 @@ class _StandardizedSGD(OnlineModel):
 
     name = "sgd_logistic"
 
-    def __init__(self, alpha: float = 1e-4, eta0: float = 0.01,
-                 learning_rate: str = "optimal") -> None:
+    def __init__(
+        self, alpha: float = 1e-4, eta0: float = 0.01, learning_rate: str = "optimal"
+    ) -> None:
         self._alpha = alpha
         self._eta0 = eta0
         self._lr = learning_rate
@@ -72,8 +74,7 @@ class LogisticBaseline(OnlineModel):
 
     def reset(self) -> None:
         self.scaler = StandardScaler()
-        self.clf = LogisticRegression(C=self._C, max_iter=200,
-                                      random_state=settings.random_seed)
+        self.clf = LogisticRegression(C=self._C, max_iter=200, random_state=settings.random_seed)
         self._buf_X: list[np.ndarray] = []
         self._buf_y: list[np.ndarray] = []
         self._fitted = False

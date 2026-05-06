@@ -10,13 +10,13 @@ from src.drift.detectors import (
 from src.drift.factory import build_detector
 
 __all__ = [
-    "DriftDetector",
-    "DriftEvent",
     "ADWINDetector",
     "DDMDetector",
+    "DriftDetector",
+    "DriftEvent",
     "EDDMDetector",
+    "HybridDriftDetector",
     "KSWINDetector",
     "PageHinkleyDetector",
-    "HybridDriftDetector",
     "build_detector",
 ]

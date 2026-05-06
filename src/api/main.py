@@ -1,4 +1,5 @@
 """FastAPI inference service with Prometheus metrics + online updates."""
+
 from __future__ import annotations
 
 import asyncio
@@ -34,9 +35,13 @@ async def _lifespan(app: FastAPI):
         loaded: LoadedModel = load()
         _state["model"] = loaded
         MODEL_VERSION_INFO.labels(version=loaded.version, source=loaded.source).set(1)
-        log.info("Service ready (model=%s v=%s src=%s)",
-                 settings.model_name, loaded.version, loaded.source)
-    except Exception as e:  # noqa: BLE001
+        log.info(
+            "Service ready (model=%s v=%s src=%s)",
+            settings.model_name,
+            loaded.version,
+            loaded.source,
+        )
+    except Exception as e:
         log.exception("startup failed: %s", e)
         _state["model"] = None
     yield
@@ -109,7 +114,7 @@ async def reload_model() -> ReloadResponse:
             _state["model"] = loaded
             MODEL_VERSION_INFO.labels(version=loaded.version, source=loaded.source).set(1)
         return ReloadResponse(status="reloaded", new_version=loaded.version)
-    except Exception as e:  # noqa: BLE001
+    except Exception as e:
         log.exception("reload failed")
         return ReloadResponse(status="failed", new_version="unknown", detail=str(e))
 

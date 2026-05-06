@@ -11,6 +11,7 @@ Returns a per-stream `RunResult` with the time series of accuracy, latency,
 and detection events. Detection delay vs. ground-truth drift points is
 computed downstream by `experiments/metrics.py`.
 """
+
 from __future__ import annotations
 
 import time
