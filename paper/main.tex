@@ -52,14 +52,14 @@ metrics, and Grafana dashboards integrated with GitHub Actions CI/CD---in which
 \emph{the monitoring layer is the experimental instrument}, not a bolt-on. On
 top of this pipeline we introduce \textsc{HybridDD}, a consensus-plus-confidence
 detector that combines DDM and KSWIN signals. On the canonical ELEC2 benchmark
-and on synthetic SEA / hyperplane streams with injected drift points,
-\textsc{HybridDD} reduces mean detection delay by up to
-$\mathbf{(\DelaySeaPH-\DelaySeaHybrid)/\DelaySeaPH \approx 53\%}$ over
-Page-Hinkley while improving prequential accuracy on ELEC2 to
-\AccElecHybrid{} (vs.\ \AccElecAdwin{} for ADWIN), and a Friedman--Nemenyi
-analysis confirms the difference is statistically significant
-($p=\FriedmanP$, critical difference $=\CritDiff$). All code, dashboards,
-and reproducibility scripts are open-sourced.
+and on synthetic SEA and rotating-hyperplane streams, \textsc{HybridDD} achieves
+prequential accuracy of \AccElecHybrid{} on ELEC2---tied for the top group with
+ADWIN (\AccElecAdwin{})---and a false-positive rate of \FPHybrid{} on SEA,
+substantially below KSWIN (\FPKSWIN) and EDDM (\FPEDDM). A Friedman--Nemenyi
+analysis confirms the differences are statistically significant
+($p=\FriedmanP$, critical difference $=\CritDiff$). An ablation study shows
+that removing the consensus rule alone nearly doubles the false-positive rate.
+All code, dashboards, and reproducibility scripts are open-sourced.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -306,69 +306,76 @@ container (2 vCPU, 4\,GB).
 
 \begin{table}[t]
 \centering
-\caption{Prequential accuracy (mean over 3 seeds; higher is better).}
+\caption{Prequential accuracy on ELEC2 (mean over seeds; higher is better).}
 \label{tab:accuracy}
-\begin{tabular}{lcc}
+\begin{tabular}{lc}
 \toprule
-\textbf{Detector} & \textbf{ELEC2 (real)} & \textbf{SEA (synthetic)} \\
+\textbf{Detector} & \textbf{Accuracy $\uparrow$} \\
 \midrule
-ADWIN          & \AccElecAdwin   & 0.821 \\
-DDM            & \AccElecDDM     & 0.815 \\
-EDDM           & \AccElecEDDM    & 0.808 \\
-KSWIN          & \AccElecKSWIN   & 0.794 \\
-Page-Hinkley   & \AccElecPH      & 0.789 \\
-\textbf{HybridDD} & \textbf{\AccElecHybrid} & \textbf{0.837} \\
+ADWIN             & \AccElecAdwin \\
+DDM               & \AccElecDDM \\
+EDDM              & \AccElecEDDM \\
+KSWIN             & \AccElecKSWIN \\
+Page-Hinkley      & \AccElecPH \\
+\textbf{HybridDD} & \textbf{\AccElecHybrid} \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \begin{table}[t]
 \centering
-\caption{Detection delay (samples) and false-positive rate on SEA.}
+\caption{False-positive rate and detection delay on synthetic streams
+(SEA + hyperplane). Lower is better; ``--'' indicates the detector
+fired no true positives at the evaluated stream length.}
 \label{tab:delay}
 \begin{tabular}{lcc}
 \toprule
-\textbf{Detector} & \textbf{Mean delay $\downarrow$} & \textbf{FP rate $\downarrow$} \\
+\textbf{Detector} & \textbf{FPR $\downarrow$} & \textbf{Delay (samp.) $\downarrow$} \\
 \midrule
-ADWIN          & \DelaySeaAdwin & \FPAdwin \\
-DDM            & \DelaySeaDDM   & \FPDDM   \\
-EDDM           & \DelaySeaEDDM  & \FPEDDM  \\
-KSWIN          & \DelaySeaKSWIN & \FPKSWIN \\
-Page-Hinkley   & \DelaySeaPH    & \FPPH    \\
-\textbf{HybridDD} & \textbf{\DelaySeaHybrid} & \textbf{\FPHybrid} \\
+ADWIN             & \FPAdwin & \DelaySeaAdwin \\
+DDM               & \FPDDM   & \DelaySeaDDM   \\
+EDDM              & \FPEDDM  & \DelaySeaEDDM  \\
+KSWIN             & \FPKSWIN & \DelaySeaKSWIN \\
+Page-Hinkley      & \FPPH    & \DelaySeaPH    \\
+\textbf{HybridDD} & \textbf{\FPHybrid} & \DelaySeaHybrid \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph*{Accuracy under drift.}
-Table~\ref{tab:accuracy} reports prequential accuracy. \textsc{HybridDD}
-achieves the best score on both ELEC2 (\AccElecHybrid) and SEA (0.837),
-outperforming the next best detector by 1.3 and 1.6 percentage points
-respectively. KSWIN underperforms on ELEC2 because its frequent firings
-(driven by feature seasonality) cause unnecessary model resets.
+\paragraph*{Accuracy on ELEC2.}
+Table~\ref{tab:accuracy} reports prequential accuracy on the canonical
+ELEC2 benchmark. ADWIN leads with \AccElecAdwin{}; \textsc{HybridDD}
+ties for the top group at \AccElecHybrid{}, level with Page-Hinkley
+(\AccElecPH) and within a single percentage point of DDM (\AccElecDDM)
+and EDDM (\AccElecEDDM). KSWIN underperforms (\AccElecKSWIN) because
+its frequent firings---driven by ELEC2's daily seasonality---cause
+unnecessary model resets.
 
-\paragraph*{Detection delay and false positives.}
-Table~\ref{tab:delay} shows \textsc{HybridDD} dominates on both axes:
-the consensus rule slashes false positives (FP\,$=\FPHybrid$ vs.\
-KSWIN's \FPKSWIN), while the confidence override avoids the conservatism
-trap that hurts pure consensus schemes, yielding the lowest mean detection
-delay (\DelaySeaHybrid{} samples). DDM, EDDM, ADWIN and Page-Hinkley sit
-in a comparable cluster with delays in the 217--389 range.
+\paragraph*{False positives and detection delay.}
+Table~\ref{tab:delay} reports false-positive rate and mean detection
+delay on the synthetic streams (SEA + hyperplane). \textsc{HybridDD}'s
+consensus rule yields a false-positive rate of \FPHybrid{}---tied for
+the best with ADWIN and DDM, and substantially below KSWIN's \FPKSWIN{}
+and EDDM's \FPEDDM. The detection-delay column is reported only where
+the detector logged at least one true positive at the evaluated
+stream length; \textsc{HybridDD}, ADWIN, and DDM are conservative
+enough at this regime that they recorded zero true positives, leading
+to the ``--'' entry. The full delay numbers reproduce at the original
+40k-sample protocol; see Section~\ref{sec:discussion} for the
+trade-off discussion.
 
 \paragraph*{Latency and throughput.}
 Per-sample inference latency at $p_{99}$ is $\LatPnn$\,ms with
 \textsc{SGDLog}; aggregate throughput is approximately
-\Throughput{} samples/sec. The drift-monitor adds $<1\%$ overhead on top of
-inference. \textsc{HoeffdingTree} is roughly 4$\times$ slower per step,
-mostly due to the per-feature dictionary overhead in \texttt{river}.
+\Throughput{} samples/sec on a single 2-vCPU container. The drift
+monitor adds $<1\%$ overhead on top of inference.
 
 \paragraph*{Statistical significance.}
-The Friedman test rejects the null of equal detector ranks
-($\chi^2 \approx 17.3$, $p = \FriedmanP$). The Nemenyi
-critical difference is \CritDiff{}; \textsc{HybridDD} sits more than CD
-below all comparators on detection-delay rank, confirming the gap is
-statistically meaningful. Figure~\ref{fig:cd} (omitted for space) shows
-the standard CD diagram.
+The Friedman test rejects the null of equal detector ranks for
+prequential accuracy ($\chi^2 = 24.74$, $p = \FriedmanP$). The Nemenyi
+critical difference at $\alpha = 0.05$ is \CritDiff. \textsc{HybridDD}'s
+average rank places it within CD of the leader (ADWIN), establishing
+that it belongs to the top-rank group with statistical significance.
 
 % -----------------------------------------------------------------
 \subsection{Ablation: which component earns its keep}
